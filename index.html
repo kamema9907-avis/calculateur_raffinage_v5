@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>Calculateur de Raffinage Albion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: { colors: { dark: '#121212', card: '#1e1e1e', accent: '#eab308' } }
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark text-gray-200 min-h-screen p-4 font-sans">
+
+    <div class="max-w-7xl mx-auto mb-6 text-center">
+        <h1 class="text-3xl font-bold text-accent">⚒️ Calculateur de Raffinage Albion</h1>
+        <p class="text-gray-400 mt-2">Analysez la rentabilité du raffinage en temps réel via l'Albion Data Project (Version 100% web)</p>
+    </div>
+
+    <!-- ONGLETS -->
+    <div class="max-w-7xl mx-auto mb-4 flex gap-2 border-b border-gray-700">
+        <button onclick="afficherOnglet('raffinage')" id="tab-raffinage" class="tab-btn px-4 py-2 text-sm font-bold rounded-t border-b-2 border-accent text-accent">⚒️ Raffinage</button>
+        <button onclick="afficherOnglet('meilleurs')" id="tab-meilleurs" class="tab-btn px-4 py-2 text-sm font-bold rounded-t border-b-2 border-transparent text-gray-400 hover:text-white">🏆 Meilleurs Retours</button>
+        <button onclick="afficherOnglet('recursif')" id="tab-recursif" class="tab-btn px-4 py-2 text-sm font-bold rounded-t border-b-2 border-transparent text-gray-400 hover:text-white">🔁 Coûts Récursifs</button>
+    </div>
+
+    <!-- CALCULATEUR RAFFINAGE -->
+    <div id="section-raffinage" class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="md:col-span-1 space-y-4">
+            <div class="bg-card p-4 rounded border border-gray-800 shadow">
+                <h2 class="text-lg font-bold text-accent mb-2 border-b border-gray-700 pb-1">1. Ressources</h2>
+                <div class="space-y-1 text-sm">
+                    <label class="flex items-center gap-2"><input type="radio" name="res_type" value="WOOD" checked class="form-radio text-accent bg-dark"> 🪵 Bois (Planches)</label>
+                    <label class="flex items-center gap-2"><input type="radio" name="res_type" value="ORE" class="form-radio text-accent bg-dark"> 🪨 Minerai (Lingots)</label>
+                    <label class="flex items-center gap-2"><input type="radio" name="res_type" value="HIDE" class="form-radio text-accent bg-dark"> 🦌 Peau (Cuir)</label>
+                    <label class="flex items-center gap-2"><input type="radio" name="res_type" value="FIBER" class="form-radio text-accent bg-dark"> 🌿 Fibre (Tissu)</label>
+                    <label class="flex items-center gap-2"><input type="radio" name="res_type" value="ROCK" class="form-radio text-accent bg-dark"> 🧱 Pierre (Blocs)</label>
+                </div>
+            </div>
+            <div class="bg-card p-4 rounded border border-gray-800 shadow">
+                <h2 class="text-lg font-bold text-accent mb-2 border-b border-gray-700 pb-1">2. Villes de Marché</h2>
+                <div id="refine-villes-container" class="space-y-1 text-sm"></div>
+            </div>
+            <div class="bg-card p-4 rounded border border-gray-800 shadow">
+                <h2 class="text-lg font-bold text-accent mb-2 border-b border-gray-700 pb-1">3. Bonus (Taux de Retour)</h2>
+                <div class="flex items-center justify-between text-sm mb-2">
+                    <span>Bonus de Ville (%)</span>
+                    <input type="number" id="bonus-ville" value="36.7" class="w-16 bg-dark border border-gray-700 rounded px-1 text-center">
+                </div>
+                <div class="flex items-center justify-between text-sm mb-2">
+                    <span>Bonus Quotidien (%)</span>
+                    <input type="number" id="bonus-jour" value="0" class="w-16 bg-dark border border-gray-700 rounded px-1 text-center">
+                </div>
+                <div class="flex items-center justify-between text-sm mb-2">
+                    <span>Bonus de Focus (%)</span>
+                    <input type="number" id="bonus-focus" value="0" class="w-16 bg-dark border border-gray-700 rounded px-1 text-center">
+                </div>
+                <div class="flex items-center justify-between text-sm mb-2 pt-2 border-t border-gray-800">
+                    <span class="text-gray-400">Taxe de Vente (%)</span>
+                    <input type="number" id="taxe-vente" value="4.0" step="0.5" class="w-16 bg-dark border border-gray-700 rounded px-1 text-center">
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-400">Frais Station (/100)</span>
+                    <input type="number" id="frais-station" value="400" class="w-16 bg-dark border border-gray-700 rounded px-1 text-center">
+                </div>
+            </div>
+            <button onclick="calculerRaffinage()" class="w-full bg-accent text-black font-bold rounded py-2 hover:bg-yellow-500 shadow-lg transition-colors">Lancer l'Analyse</button>
+        </div>
+        <div class="md:col-span-3">
+            <div class="bg-black p-4 rounded-xl border border-gray-800 shadow-xl h-[85vh] overflow-y-auto">
+                <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-800 pb-2">Résultats de Rentabilité</h2>
+                <div id="refining-results" class="text-gray-400">
+                    Sélectionnez une ressource et cliquez sur "Lancer l'Analyse" pour interroger les marchés en direct...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION MEILLEURS RETOURS -->
+    <div id="section-meilleurs" class="max-w-7xl mx-auto hidden">
+        <div class="bg-black p-4 rounded-xl border border-gray-800 shadow-xl">
+            <div class="flex items-center justify-between mb-4 border-b border-gray-800 pb-2">
+                <h2 class="text-xl font-bold text-white">🏆 Meilleurs Retours — Toutes Ressources</h2>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="text-gray-400">Filtre ≥</span>
+                        <input type="number" id="filtre-meilleurs" value="10" class="w-16 bg-dark border border-gray-700 rounded px-1 text-center text-white">
+                        <span class="text-gray-400">%</span>
+                    </div>
+                    <button onclick="scannerTout()" class="bg-accent text-black font-bold rounded px-6 py-2 hover:bg-yellow-500 shadow-lg transition-colors text-sm">Scanner tout</button>
+                </div>
+            </div>
+            <div id="scan-progression" class="hidden mb-4">
+                <div class="flex items-center gap-3 mb-2">
+                    <span id="scan-label" class="text-accent text-sm font-bold"></span>
+                    <span id="scan-count" class="text-gray-400 text-sm"></span>
+                </div>
+                <div class="w-full bg-gray-800 rounded-full h-2">
+                    <div id="scan-bar" class="bg-accent h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+            <div id="meilleurs-results" class="text-gray-400 min-h-[60vh] overflow-y-auto">
+                Cliquez sur "Scanner tout" pour analyser les 5 ressources et afficher les meilleures opportunités...
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION COÛTS RÉCURSIFS -->
+    <div id="section-recursif" class="max-w-7xl mx-auto hidden">
+        <div class="bg-black p-4 rounded-xl border border-gray-800 shadow-xl">
+            <div class="flex items-center justify-between mb-4 border-b border-gray-800 pb-2">
+                <div>
+                    <h2 class="text-xl font-bold text-white">🔁 Coûts Récursifs — Optimisation Fabrication</h2>
+                    <p class="text-gray-500 text-xs mt-1">Utilise votre coût de fabrication à chaque niveau si inférieur au marché. Cliquez sur une ligne pour voir la décomposition.</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="text-gray-400">Filtre ≥</span>
+                        <input type="number" id="filtre-recursif" value="10" class="w-16 bg-dark border border-gray-700 rounded px-1 text-center text-white">
+                        <span class="text-gray-400">%</span>
+                    </div>
+                    <button onclick="scannerToutRecursif()" class="bg-accent text-black font-bold rounded px-6 py-2 hover:bg-yellow-500 shadow-lg transition-colors text-sm">Scanner tout</button>
+                </div>
+            </div>
+            <div id="rec-progression" class="hidden mb-4">
+                <div class="flex items-center gap-3 mb-2">
+                    <span id="rec-label" class="text-accent text-sm font-bold"></span>
+                    <span id="rec-count" class="text-gray-400 text-sm"></span>
+                </div>
+                <div class="w-full bg-gray-800 rounded-full h-2">
+                    <div id="rec-bar" class="bg-accent h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+            <div id="recursif-results" class="text-gray-400 min-h-[60vh] overflow-y-auto">
+                Cliquez sur "Scanner tout" pour analyser toutes les ressources avec calcul récursif des coûts de fabrication...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const toutesLesVilles = ["Thetford", "Lymhurst", "Bridgewatch", "Martlock", "Fort Sterling", "Caerleon", "Caerleon (Black Market)", "Brecilien"];
+
+        const mapping = {
+            "WOOD":  {raw: "WOOD", refined: "PLANKS",     label: "🪵 Bois"},
+            "ORE":   {raw: "ORE",  refined: "METALBAR",   label: "🪨 Minerai"},
+            "HIDE":  {raw: "HIDE", refined: "LEATHER",    label: "🦌 Peau"},
+            "FIBER": {raw: "FIBER",refined: "CLOTH",      label: "🌿 Fibre"},
+            "ROCK":  {raw: "ROCK", refined: "STONEBLOCK", label: "🧱 Pierre"},
+        };
+
+        const amounts = {2: 1, 3: 2, 4: 2, 5: 3, 6: 4, 7: 5, 8: 5};
+
+        function get_iv_raw(tier, ench) {
+            return (2 ** (tier - 2)) * (2 ** ench);
+        }
+
+        function get_iv_ref(tier, ench) {
+            if (tier === 2) {
+                return amounts[2] * get_iv_raw(2, 0);
+            } else if (tier === 3) {
+                return amounts[3] * get_iv_raw(3, 0) + get_iv_ref(2, 0);
+            } else if (tier === 4) {
+                return amounts[4] * get_iv_raw(4, ench) + get_iv_ref(3, 0);
+            } else {
+                return amounts[tier] * get_iv_raw(tier, ench) + get_iv_ref(tier - 1, ench);
+            }
+        }
+
+        const tabIds = ['raffinage', 'meilleurs', 'recursif'];
+
+        function afficherOnglet(onglet) {
+            tabIds.forEach(id => {
+                document.getElementById(`section-${id}`).classList.toggle('hidden', id !== onglet);
+                const btn = document.getElementById(`tab-${id}`);
+                btn.classList.toggle('border-accent', id === onglet);
+                btn.classList.toggle('text-accent', id === onglet);
+                btn.classList.toggle('border-transparent', id !== onglet);
+                btn.classList.toggle('text-gray-400', id !== onglet);
+            });
+        }
+
+        function initialiserInterface() {
+            const container = document.getElementById('refine-villes-container');
+            container.innerHTML = '';
+            toutesLesVilles.forEach(ville => {
+                container.innerHTML += `
+                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-800 px-1 rounded">
+                        <input type="checkbox" value="${ville}" class="refine-ville-checkbox form-checkbox text-accent bg-dark" checked>
+                        <span>${ville}</span>
+                    </label>`;
+            });
+        }
+
+        function getParams() {
+            const base = (parseFloat(document.getElementById('bonus-ville').value) || 0) +
+                         (parseFloat(document.getElementById('bonus-jour').value) || 0);
+            const focus = parseFloat(document.getElementById('bonus-focus').value) || 0;
+            return {
+                villesCochees: Array.from(document.querySelectorAll('.refine-ville-checkbox:checked')).map(cb => cb.value),
+                rrr_base:  base / 100.0,
+                rrr_focus: (base + focus) / 100.0,
+                taxe_mult: (100.0 - (parseFloat(document.getElementById('taxe-vente').value) || 0)) / 100.0,
+                station_fee_mult: 0.1125 * ((parseFloat(document.getElementById('frais-station').value) || 0) / 100.0),
+            };
+        }
+
+        function getRRR(params, t) {
+            return t >= 6 ? params.rrr_focus : params.rrr_base;
+        }
+
+        async function fetchPrices(resType, villesCochees) {
+            const res_raw = mapping[resType].raw;
+            const res_ref = mapping[resType].refined;
+
+            const items_to_fetch = new Set();
+            for (let t = 2; t <= 8; t++) {
+                for (let e = 0; e <= 3; e++) {
+                    if (t < 4 && e > 0) continue;
+                    const suffix = e > 0 ? `_LEVEL${e}@${e}` : "";
+                    items_to_fetch.add(`T${t}_${res_raw}${suffix}`);
+                    const ref_suffix = (resType === "ROCK") ? "" : suffix;
+                    items_to_fetch.add(`T${t}_${res_ref}${ref_suffix}`);
+                    if (t > 2) {
+                        if (t === 4) items_to_fetch.add(`T3_${res_ref}`);
+                        else items_to_fetch.add(`T${t-1}_${res_ref}${ref_suffix}`);
+                    }
+                }
+            }
+
+            const items_list = Array.from(items_to_fetch);
+            const prices = {};
+            items_list.forEach(item => {
+                prices[item] = { min_sell: Infinity, city_sell: "N/A", max_buy: 0, city_buy: "N/A" };
+            });
+
+            const chunk_size = 50;
+            for (let i = 0; i < items_list.length; i += chunk_size) {
+                const chunk = items_list.slice(i, i + chunk_size);
+                const url = `https://europe.albion-online-data.com/api/v2/stats/prices/${chunk.join(',')}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                data.forEach(entry => {
+                    let city_display = entry.city === "Black Market" ? "Caerleon (Black Market)" : entry.city;
+                    if (!villesCochees.includes(city_display)) return;
+                    const item_id = entry.item_id;
+                    if (prices[item_id]) {
+                        const s = entry.sell_price_min || 0;
+                        const b = entry.buy_price_max || 0;
+                        if (s > 0 && s < prices[item_id].min_sell) { prices[item_id].min_sell = s; prices[item_id].city_sell = city_display; }
+                        if (b > prices[item_id].max_buy) { prices[item_id].max_buy = b; prices[item_id].city_buy = city_display; }
+                    }
+                });
+            }
+            return prices;
+        }
+
+        function calculerLignes(resType, prices, params) {
+            const { taxe_mult, station_fee_mult } = params;
+            const res_raw = mapping[resType].raw;
+            const res_ref = mapping[resType].refined;
+            const lignes = [];
+
+            for (let t = 2; t <= 8; t++) {
+                for (let e = 0; e <= 3; e++) {
+                    if (t < 4 && e > 0) continue;
+                    const rrr = getRRR(params, t);
+                    const suffix = e > 0 ? `_LEVEL${e}@${e}` : "";
+                    const raw_id = `T${t}_${res_raw}${suffix}`;
+                    const ref_suffix = (resType === "ROCK") ? "" : suffix;
+                    const ref_id = `T${t}_${res_ref}${ref_suffix}`;
+                    let base_id = t === 4 ? `T3_${res_ref}` : (t > 2 ? `T${t-1}_${res_ref}${ref_suffix}` : "");
+                    const qty_raw = amounts[t];
+                    const qty_base = t === 2 ? 0 : 1;
+                    const p_raw_market = prices[raw_id].min_sell !== Infinity ? prices[raw_id].min_sell : 0;
+                    let divisor = (resType === "ROCK" && e > 0) ? Math.pow(2, e) : 1;
+                    const p_raw = p_raw_market / divisor;
+                    let p_base = 0, c_base_sell = "-";
+                    if (base_id) { p_base = prices[base_id].min_sell !== Infinity ? prices[base_id].min_sell : 0; c_base_sell = prices[base_id].city_sell; }
+                    const p_ref = prices[ref_id].max_buy;
+                    if (p_raw_market === 0 && p_base === 0 && p_ref === 0) continue;
+                    const cout_total_achat = (p_raw * qty_raw) + (p_base * qty_base);
+                    const cout_net_achat = cout_total_achat * (1 - rrr);
+                    const iv_ref = get_iv_ref(t, resType === "ROCK" ? 0 : e);
+                    const frais_station_silver = iv_ref * station_fee_mult;
+                    const cout_total_complet = cout_net_achat + frais_station_silver;
+                    const profit = (p_ref * taxe_mult) - cout_total_complet;
+                    const pct_retour = cout_total_complet > 0 ? (profit / cout_total_complet * 100) : null;
+                    lignes.push({ resType, t, e, raw_id, ref_id, base_id, qty_raw, qty_base, p_raw, p_raw_market, p_base, p_ref, c_raw_sell: prices[raw_id].city_sell, c_base_sell, c_ref_buy: prices[ref_id].city_buy, cout_net_achat, frais_station_silver, cout_total_complet, profit, pct_retour, divisor, rrr });
+                }
+            }
+            return lignes;
+        }
+
+        // ─── CALCUL RÉCURSIF ────────────────────────────────────────────────────────
+
+        function calculerCraftCosts(resType, prices, params) {
+            const { station_fee_mult } = params;
+            const res_raw = mapping[resType].raw;
+            const res_ref = mapping[resType].refined;
+            const craftCosts = {};
+
+            for (let t = 2; t <= 8; t++) {
+                for (let e = 0; e <= 3; e++) {
+                    if (t < 4 && e > 0) continue;
+
+                    const rrr = getRRR(params, t);
+                    const suffix = e > 0 ? `_LEVEL${e}@${e}` : "";
+                    const raw_id = `T${t}_${res_raw}${suffix}`;
+                    const ref_suffix = (resType === "ROCK") ? "" : suffix;
+                    const ref_id = `T${t}_${res_ref}${ref_suffix}`;
+                    const base_id = t === 2 ? "" : (t === 4 ? `T3_${res_ref}` : `T${t-1}_${res_ref}${ref_suffix}`);
+
+                    const qty_raw = amounts[t];
+                    let divisor = (resType === "ROCK" && e > 0) ? Math.pow(2, e) : 1;
+                    const p_raw_market = prices[raw_id] && prices[raw_id].min_sell !== Infinity ? prices[raw_id].min_sell : 0;
+                    const p_raw = p_raw_market / divisor;
+
+                    if (p_raw === 0) { craftCosts[ref_id] = null; continue; }
+
+                    let p_base_market = 0, p_base_craft = null, base_source = "N/A";
+                    if (base_id) {
+                        p_base_market = prices[base_id] && prices[base_id].min_sell !== Infinity ? prices[base_id].min_sell : 0;
+                        p_base_craft = craftCosts[base_id] ? craftCosts[base_id].cost : null;
+
+                        if (p_base_craft !== null && (p_base_market === 0 || p_base_craft < p_base_market)) {
+                            base_source = "craft";
+                        } else if (p_base_market > 0) {
+                            base_source = "marché";
+                        }
+                    }
+
+                    const p_base_used = base_id ? (base_source === "craft" ? p_base_craft : p_base_market) : 0;
+
+                    const cout_total_achat = (p_raw * qty_raw) + p_base_used;
+                    const cout_net_achat = cout_total_achat * (1 - rrr);
+                    const iv_ref = get_iv_ref(t, resType === "ROCK" ? 0 : e);
+                    const frais_station_silver = iv_ref * station_fee_mult;
+                    const craftCost = cout_net_achat + frais_station_silver;
+
+                    craftCosts[ref_id] = {
+                        cost: craftCost, t, e, ref_id, raw_id, base_id,
+                        qty_raw, p_raw, p_raw_market, divisor,
+                        p_base_market, p_base_craft, p_base_used, base_source,
+                        cout_net_achat, frais_station_silver,
+                        rrr_used: rrr,
+                        city_raw: prices[raw_id] ? prices[raw_id].city_sell : "N/A",
+                        city_base: base_id && prices[base_id] ? prices[base_id].city_sell : "-",
+                    };
+                }
+            }
+            return craftCosts;
+        }
+
+        function buildBreakdown(ref_id, craftCosts) {
+            const steps = [];
+            let current = ref_id;
+            while (current && craftCosts[current]) {
+                steps.unshift(craftCosts[current]);
+                current = craftCosts[current].base_id || null;
+            }
+            return steps;
+        }
+
+        function calculerLignesRecursif(resType, prices, params) {
+            const { taxe_mult } = params;
+            const res_ref = mapping[resType].refined;
+            const craftCosts = calculerCraftCosts(resType, prices, params);
+            const lignes = [];
+
+            for (let t = 2; t <= 8; t++) {
+                for (let e = 0; e <= 3; e++) {
+                    if (t < 4 && e > 0) continue;
+                    const suffix = e > 0 ? `_LEVEL${e}@${e}` : "";
+                    const ref_suffix = (resType === "ROCK") ? "" : suffix;
+                    const ref_id = `T${t}_${res_ref}${ref_suffix}`;
+                    const cd = craftCosts[ref_id];
+                    if (!cd) continue;
+
+                    const p_ref = prices[ref_id] ? prices[ref_id].max_buy : 0;
+                    if (p_ref === 0) continue;
+
+                    const cout_total_complet = cd.cost;
+                    const profit = (p_ref * taxe_mult) - cout_total_complet;
+                    const pct_retour = cout_total_complet > 0 ? (profit / cout_total_complet * 100) : null;
+
+                    const saving_pct = cd.base_id && cd.p_base_market > 0 && cd.p_base_craft !== null && cd.p_base_craft < cd.p_base_market
+                        ? ((cd.p_base_market - cd.p_base_craft) / cd.p_base_market * 100) : 0;
+
+                    lignes.push({
+                        resType, t, e, ref_id, base_id: cd.base_id,
+                        raw_id: cd.raw_id, qty_raw: cd.qty_raw,
+                        p_raw: cd.p_raw, p_raw_market: cd.p_raw_market, divisor: cd.divisor,
+                        p_base_market: cd.p_base_market, p_base_craft: cd.p_base_craft,
+                        p_base_used: cd.p_base_used, base_source: cd.base_source, saving_pct,
+                        p_ref,
+                        c_raw_sell: cd.city_raw, c_base_sell: cd.city_base,
+                        c_ref_buy: prices[ref_id] ? prices[ref_id].city_buy : "N/A",
+                        cout_net_achat: cd.cout_net_achat, frais_station_silver: cd.frais_station_silver,
+                        cout_total_complet, profit, pct_retour,
+                        rrr: params.rrr,
+                        rrr: t >= 6 ? params.rrr_focus : params.rrr_base,
+                        breakdown: buildBreakdown(ref_id, craftCosts),
+                    });
+                }
+            }
+            return lignes;
+        }
+
+        // ─── RENDU HTML ─────────────────────────────────────────────────────────────
+
+        function genererTableauHTML(lignes, avecColRessource = false) {
+            let html = `<div class="overflow-x-auto"><table class="w-full text-xs text-left border-collapse bg-dark rounded overflow-hidden shadow-lg">
+                <thead class="bg-gray-800 text-accent border-b border-gray-700"><tr>
+                    ${avecColRessource ? '<th class="p-2 border-r border-gray-700">Ressource</th>' : ''}
+                    <th class="p-2 border-r border-gray-700">Tier</th>
+                    <th class="p-2 border-r border-gray-700">Matière Brute (Achat)</th>
+                    <th class="p-2 border-r border-gray-700">Matière Base (Achat)</th>
+                    <th class="p-2 border-r border-gray-700">Produit Raffiné (Vente)</th>
+                    <th class="p-2 border-r border-gray-700">Coûts (Achat + Station)</th>
+                    <th class="p-2 border-r border-gray-700 text-right">Profit Net (-Taxes)</th>
+                    <th class="p-2 text-right">% Retour</th>
+                </tr></thead><tbody>`;
+
+            for (const r of lignes) {
+                const colorClass = r.profit > 0 ? "text-green-400 font-bold bg-green-900/20" : "text-red-400 bg-red-900/10";
+                const pctColor = r.pct_retour !== null ? (r.pct_retour >= 10 ? 'text-green-400' : (r.pct_retour > 0 ? 'text-yellow-400' : 'text-red-400')) : 'text-gray-500';
+                const pctStr = r.pct_retour !== null ? r.pct_retour.toFixed(1) + '%' : 'N/A';
+                const str_p_raw = r.p_raw > 0 ? r.p_raw.toLocaleString() : "???";
+                const display_c_raw = r.divisor > 1 ? `${r.c_raw_sell} (Vrai: ${r.p_raw_market.toLocaleString()})` : r.c_raw_sell;
+                const str_p_base = r.p_base > 0 ? r.p_base.toLocaleString() : "???";
+                const str_p_ref = r.p_ref > 0 ? r.p_ref.toLocaleString() : "???";
+
+                html += `<tr class="border-b border-gray-800 hover:bg-gray-900 transition-colors">
+                    ${avecColRessource ? `<td class="p-2 border-r border-gray-800 font-bold text-accent text-center">${mapping[r.resType].label}</td>` : ''}
+                    <td class="p-2 font-bold text-gray-300 border-r border-gray-800 text-center bg-gray-900/50">T${r.t}.${r.e}</td>
+                    <td class="p-2 border-r border-gray-800">
+                        <div class="flex items-center gap-1"><img src="https://render.albiononline.com/v1/item/${r.raw_id}.png" class="w-5 h-5"><span class="text-white">${str_p_raw}</span> <span class="text-gray-500">x${r.qty_raw}</span></div>
+                        <div class="text-[10px] text-gray-600 mt-1">${display_c_raw}</div>
+                    </td>
+                    <td class="p-2 border-r border-gray-800">
+                        <div class="flex items-center gap-1"><img src="https://render.albiononline.com/v1/item/${r.base_id}.png" class="w-5 h-5" onerror="this.style.display='none'"><span class="text-white">${str_p_base}</span> <span class="text-gray-500">x${r.qty_base}</span></div>
+                        <div class="text-[10px] text-gray-600 mt-1">${r.c_base_sell}</div>
+                    </td>
+                    <td class="p-2 border-r border-gray-800">
+                        <div class="flex items-center gap-1"><img src="https://render.albiononline.com/v1/item/${r.ref_id}.png" class="w-5 h-5"><span class="text-yellow-400 font-bold">${str_p_ref}</span></div>
+                        <div class="text-[10px] text-gray-600 mt-1">${r.c_ref_buy}</div>
+                    </td>
+                    <td class="p-2 border-r border-gray-800 text-gray-400">
+                        <div>Net: <span class="text-white">${Math.round(r.cout_net_achat).toLocaleString()}</span> <span class="text-[10px] text-gray-500">(-${(r.rrr*100).toFixed(1)}% RRR)</span></div>
+                        <div>Frais: <span class="text-orange-300">+${Math.round(r.frais_station_silver).toLocaleString()}</span> <span class="text-[10px] text-gray-500">(Station)</span></div>
+                    </td>
+                    <td class="p-2 border-r border-gray-800 text-right ${colorClass}">
+                        <div class="font-bold">${Math.round(r.profit).toLocaleString()}</div>
+                        <div class="text-[10px] text-gray-500 mt-1 opacity-75">Taxes incluses</div>
+                    </td>
+                    <td class="p-2 text-right font-bold ${pctColor}">${pctStr}</td>
+                </tr>`;
+            }
+            html += `</tbody></table></div>`;
+            return html;
+        }
+
+        function genererBadgeBase(source, saving_pct) {
+            if (source === "craft" && saving_pct > 0) {
+                return `<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-900 text-green-300">✓ Craft (-${saving_pct.toFixed(1)}%)</span>`;
+            } else if (source === "craft") {
+                return `<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-900 text-green-300">✓ Craft</span>`;
+            } else if (source === "marché") {
+                return `<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-400">Marché</span>`;
+            }
+            return '';
+        }
+
+        function genererBreakdownHTML(breakdown) {
+            if (!breakdown || breakdown.length === 0) return '';
+            let rows = '';
+            for (const step of breakdown) {
+                const rrr = step.rrr_used;
+                const rawCost = step.p_raw * step.qty_raw;
+                const totalBrut = rawCost + step.p_base_used;
+                const apresRRR = totalBrut * (1 - rrr);
+                const badge = genererBadgeBase(step.base_source, step.p_base_market > 0 && step.p_base_craft !== null && step.p_base_craft < step.p_base_market ? ((step.p_base_market - step.p_base_craft) / step.p_base_market * 100) : 0);
+
+                let baseCell = '-';
+                if (step.base_id) {
+                    const mktStr = step.p_base_market > 0 ? step.p_base_market.toLocaleString() : '???';
+                    const craftStr = step.p_base_craft !== null ? Math.round(step.p_base_craft).toLocaleString() : 'N/C';
+                    baseCell = `<div class="text-gray-400">Marché: <span class="text-white">${mktStr}</span></div>
+                                <div class="text-gray-400">Craft: <span class="${step.p_base_craft !== null && (step.p_base_market === 0 || step.p_base_craft < step.p_base_market) ? 'text-green-400' : 'text-white'}">${craftStr}</span></div>
+                                <div class="mt-0.5">${badge}</div>`;
+                }
+
+                rows += `<tr class="border-b border-gray-800/50">
+                    <td class="px-3 py-1.5 font-bold text-accent text-center whitespace-nowrap">T${step.t}.${step.e}</td>
+                    <td class="px-3 py-1.5 whitespace-nowrap">
+                        <div class="text-white">${step.p_raw > 0 ? step.p_raw.toLocaleString() : '???'} × ${step.qty_raw} = <span class="text-yellow-200">${Math.round(rawCost).toLocaleString()}</span></div>
+                        <div class="text-[10px] text-blue-400 mt-0.5">🏙 ${step.city_raw || 'N/A'}</div>
+                    </td>
+                    <td class="px-3 py-1.5">${baseCell}</td>
+                    <td class="px-3 py-1.5 text-white whitespace-nowrap">${Math.round(totalBrut).toLocaleString()}</td>
+                    <td class="px-3 py-1.5 text-blue-300 whitespace-nowrap">× ${(1 - rrr).toFixed(3)}${step.t >= 6 ? ' <span class="text-yellow-500">★Focus</span>' : ''} = <span class="text-white">${Math.round(apresRRR).toLocaleString()}</span></td>
+                    <td class="px-3 py-1.5 text-orange-300 whitespace-nowrap">+${Math.round(step.frais_station_silver).toLocaleString()}</td>
+                    <td class="px-3 py-1.5 font-bold text-green-300 whitespace-nowrap">${Math.round(step.cost).toLocaleString()}</td>
+                </tr>`;
+            }
+            return `<div class="mt-2 mb-1 ml-2 overflow-x-auto">
+                <div class="text-[11px] text-gray-500 mb-1 font-bold uppercase tracking-wide">Décomposition des coûts de fabrication</div>
+                <table class="text-xs border-collapse w-full">
+                    <thead><tr class="text-gray-500 border-b border-gray-700 text-[10px] uppercase">
+                        <th class="px-3 py-1 text-left">Niveau</th>
+                        <th class="px-3 py-1 text-left">Brut × Qté</th>
+                        <th class="px-3 py-1 text-left">Base (Marché vs Craft)</th>
+                        <th class="px-3 py-1 text-left">Total Brut</th>
+                        <th class="px-3 py-1 text-left">Après RRR</th>
+                        <th class="px-3 py-1 text-left">+Station</th>
+                        <th class="px-3 py-1 text-left">= Coût Craft</th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>`;
+        }
+
+        function genererTableauRecursifHTML(lignes) {
+            let html = `<div class="overflow-x-auto"><table class="w-full text-xs text-left border-collapse bg-dark rounded overflow-hidden shadow-lg">
+                <thead class="bg-gray-800 text-accent border-b border-gray-700"><tr>
+                    <th class="p-2 border-r border-gray-700 w-6"></th>
+                    <th class="p-2 border-r border-gray-700">Ressource</th>
+                    <th class="p-2 border-r border-gray-700">Tier</th>
+                    <th class="p-2 border-r border-gray-700">Matière Brute</th>
+                    <th class="p-2 border-r border-gray-700">Matière Base</th>
+                    <th class="p-2 border-r border-gray-700">Produit (Vente)</th>
+                    <th class="p-2 border-r border-gray-700">Coûts Craft</th>
+                    <th class="p-2 border-r border-gray-700 text-right">Profit Net</th>
+                    <th class="p-2 text-right">% Retour</th>
+                </tr></thead><tbody id="rec-tbody">`;
+
+            lignes.forEach((r, idx) => {
+                const rowId = `rec-${r.resType}-${r.t}-${r.e}`;
+                const colorClass = r.profit > 0 ? "text-green-400 font-bold bg-green-900/20" : "text-red-400 bg-red-900/10";
+                const pctColor = r.pct_retour !== null ? (r.pct_retour >= 10 ? 'text-green-400' : (r.pct_retour > 0 ? 'text-yellow-400' : 'text-red-400')) : 'text-gray-500';
+                const pctStr = r.pct_retour !== null ? r.pct_retour.toFixed(1) + '%' : 'N/A';
+                const str_p_raw = r.p_raw > 0 ? r.p_raw.toLocaleString() : "???";
+                const display_c_raw = r.divisor > 1 ? `${r.c_raw_sell} (Vrai: ${r.p_raw_market.toLocaleString()})` : r.c_raw_sell;
+                const str_p_ref = r.p_ref > 0 ? r.p_ref.toLocaleString() : "???";
+
+                const mktStr = r.p_base_market > 0 ? r.p_base_market.toLocaleString() : (r.base_id ? '???' : '-');
+                const craftStr = r.p_base_craft !== null ? Math.round(r.p_base_craft).toLocaleString() : (r.base_id ? 'N/C' : '-');
+                const badge = r.base_id ? genererBadgeBase(r.base_source, r.saving_pct) : '';
+
+                const breakdownHTML = genererBreakdownHTML(r.breakdown);
+                const breakdownEscaped = breakdownHTML.replace(/`/g, '\\`');
+
+                html += `<tr class="border-b border-gray-800 hover:bg-gray-900/50 cursor-pointer transition-colors" onclick="toggleDetail('${rowId}')">
+                    <td class="p-2 text-center text-gray-500 border-r border-gray-800" id="${rowId}-arrow">▶</td>
+                    <td class="p-2 border-r border-gray-800 font-bold text-accent">${mapping[r.resType].label}</td>
+                    <td class="p-2 font-bold text-gray-300 border-r border-gray-800 text-center bg-gray-900/50">T${r.t}.${r.e}</td>
+                    <td class="p-2 border-r border-gray-800">
+                        <div class="flex items-center gap-1"><img src="https://render.albiononline.com/v1/item/${r.raw_id}.png" class="w-5 h-5"><span class="text-white">${str_p_raw}</span> <span class="text-gray-500">×${r.qty_raw}</span></div>
+                        <div class="text-[10px] text-gray-600 mt-1">${display_c_raw}</div>
+                    </td>
+                    <td class="p-2 border-r border-gray-800">
+                        ${r.base_id ? `<div class="flex items-center gap-1"><img src="https://render.albiononline.com/v1/item/${r.base_id}.png" class="w-5 h-5" onerror="this.style.display='none'">` : '<div>'}
+                        <div class="text-[10px] text-gray-400">Marché: <span class="text-white">${mktStr}</span></div>
+                        <div class="text-[10px] text-gray-400">Craft: <span class="${r.base_source === 'craft' ? 'text-green-400' : 'text-white'}">${craftStr}</span></div>
+                        ${badge}
+                        </div>
+                    </td>
+                    <td class="p-2 border-r border-gray-800">
+                        <div class="flex items-center gap-1"><img src="https://render.albiononline.com/v1/item/${r.ref_id}.png" class="w-5 h-5"><span class="text-yellow-400 font-bold">${str_p_ref}</span></div>
+                        <div class="text-[10px] text-gray-600 mt-1">${r.c_ref_buy}</div>
+                    </td>
+                    <td class="p-2 border-r border-gray-800 text-gray-400">
+                        <div>Net: <span class="text-white">${Math.round(r.cout_net_achat).toLocaleString()}</span> <span class="text-[10px] text-gray-500">(-${(r.rrr*100).toFixed(1)}% RRR)</span></div>
+                        <div>Frais: <span class="text-orange-300">+${Math.round(r.frais_station_silver).toLocaleString()}</span></div>
+                    </td>
+                    <td class="p-2 border-r border-gray-800 text-right ${colorClass}">
+                        <div class="font-bold">${Math.round(r.profit).toLocaleString()}</div>
+                        <div class="text-[10px] text-gray-500 mt-1 opacity-75">Taxes incluses</div>
+                    </td>
+                    <td class="p-2 text-right font-bold ${pctColor}">${pctStr}</td>
+                </tr>
+                <tr id="${rowId}-detail" class="hidden bg-gray-950">
+                    <td colspan="9" class="px-4 py-2">${breakdownHTML}</td>
+                </tr>`;
+            });
+
+            html += `</tbody></table></div>`;
+            return html;
+        }
+
+        function toggleDetail(rowId) {
+            const detail = document.getElementById(rowId + '-detail');
+            const arrow = document.getElementById(rowId + '-arrow');
+            if (!detail) return;
+            const isHidden = detail.classList.contains('hidden');
+            detail.classList.toggle('hidden', !isHidden);
+            arrow.textContent = isHidden ? '▼' : '▶';
+        }
+
+        // ─── FONCTIONS SCANNER ───────────────────────────────────────────────────────
+
+        async function calculerRaffinage() {
+            const resType = document.querySelector('input[name="res_type"]:checked').value;
+            const params = getParams();
+            const resultsDiv = document.getElementById('refining-results');
+            resultsDiv.innerHTML = '<div class="animate-pulse text-accent text-center mt-10">Récupération des prix sur tous les marchés...</div>';
+            try {
+                const prices = await fetchPrices(resType, params.villesCochees);
+                const lignes = calculerLignes(resType, prices, params);
+                resultsDiv.innerHTML = lignes.length > 0 ? genererTableauHTML(lignes, false) : '<div class="text-gray-500 text-center mt-10">Aucun résultat trouvé.</div>';
+            } catch (e) {
+                resultsDiv.innerHTML = `<div class='text-red-500'>Erreur de connexion AODP: ${e.message}</div>`;
+            }
+        }
+
+        async function scannerTout() {
+            const params = getParams();
+            const filtre = parseFloat(document.getElementById('filtre-meilleurs').value) || 0;
+            const ressources = Object.keys(mapping);
+            const resultsDiv = document.getElementById('meilleurs-results');
+            const progressDiv = document.getElementById('scan-progression');
+            const labelEl = document.getElementById('scan-label');
+            const countEl = document.getElementById('scan-count');
+            const barEl = document.getElementById('scan-bar');
+
+            progressDiv.classList.remove('hidden');
+            resultsDiv.innerHTML = '';
+            let toutesLignes = [];
+
+            for (let i = 0; i < ressources.length; i++) {
+                const resType = ressources[i];
+                labelEl.textContent = `Scan ${mapping[resType].label}...`;
+                countEl.textContent = `${i + 1} / ${ressources.length}`;
+                barEl.style.width = `${(i / ressources.length) * 100}%`;
+                resultsDiv.innerHTML = `<div class="animate-pulse text-accent text-center mt-10">Scan en cours : ${mapping[resType].label} (${i+1}/${ressources.length})...</div>`;
+
+                try {
+                    const prices = await fetchPrices(resType, params.villesCochees);
+                    const lignes = calculerLignes(resType, prices, params);
+                    toutesLignes = toutesLignes.concat(lignes);
+                } catch (e) {
+                    resultsDiv.innerHTML = `<div class='text-red-500'>Erreur lors du scan de ${mapping[resType].label}: ${e.message}</div>`;
+                    progressDiv.classList.add('hidden');
+                    return;
+                }
+            }
+
+            barEl.style.width = '100%';
+            labelEl.textContent = 'Scan terminé ✓';
+            countEl.textContent = `${ressources.length} / ${ressources.length}`;
+
+            const lignesFiltrees = toutesLignes
+                .filter(r => r.pct_retour !== null && r.pct_retour >= filtre)
+                .sort((a, b) => b.pct_retour - a.pct_retour);
+
+            if (lignesFiltrees.length === 0) {
+                resultsDiv.innerHTML = `<div class="text-gray-500 text-center mt-10">Aucune opportunité avec ≥ ${filtre}% de retour trouvée pour le moment.</div>`;
+            } else {
+                resultsDiv.innerHTML = `<div class="text-gray-400 text-sm mb-3">${lignesFiltrees.length} opportunité(s) avec ≥ ${filtre}% de retour, triées par rendement décroissant.</div>` + genererTableauHTML(lignesFiltrees, true);
+            }
+
+            setTimeout(() => progressDiv.classList.add('hidden'), 2000);
+        }
+
+        async function scannerToutRecursif() {
+            const params = getParams();
+            const filtre = parseFloat(document.getElementById('filtre-recursif').value) || 0;
+            const ressources = Object.keys(mapping);
+            const resultsDiv = document.getElementById('recursif-results');
+            const progressDiv = document.getElementById('rec-progression');
+            const labelEl = document.getElementById('rec-label');
+            const countEl = document.getElementById('rec-count');
+            const barEl = document.getElementById('rec-bar');
+
+            progressDiv.classList.remove('hidden');
+            resultsDiv.innerHTML = '';
+            let toutesLignes = [];
+
+            for (let i = 0; i < ressources.length; i++) {
+                const resType = ressources[i];
+                labelEl.textContent = `Scan ${mapping[resType].label}...`;
+                countEl.textContent = `${i + 1} / ${ressources.length}`;
+                barEl.style.width = `${(i / ressources.length) * 100}%`;
+                resultsDiv.innerHTML = `<div class="animate-pulse text-accent text-center mt-10">Scan récursif : ${mapping[resType].label} (${i+1}/${ressources.length})...</div>`;
+
+                try {
+                    const prices = await fetchPrices(resType, params.villesCochees);
+                    const lignes = calculerLignesRecursif(resType, prices, params);
+                    toutesLignes = toutesLignes.concat(lignes);
+                } catch (e) {
+                    resultsDiv.innerHTML = `<div class='text-red-500'>Erreur lors du scan de ${mapping[resType].label}: ${e.message}</div>`;
+                    progressDiv.classList.add('hidden');
+                    return;
+                }
+            }
+
+            barEl.style.width = '100%';
+            labelEl.textContent = 'Scan terminé ✓';
+            countEl.textContent = `${ressources.length} / ${ressources.length}`;
+
+            const lignesFiltrees = toutesLignes
+                .filter(r => r.pct_retour !== null && r.pct_retour >= filtre)
+                .sort((a, b) => b.pct_retour - a.pct_retour);
+
+            if (lignesFiltrees.length === 0) {
+                resultsDiv.innerHTML = `<div class="text-gray-500 text-center mt-10">Aucune opportunité avec ≥ ${filtre}% de retour trouvée pour le moment.</div>`;
+            } else {
+                resultsDiv.innerHTML = `<div class="text-gray-400 text-sm mb-3">${lignesFiltrees.length} opportunité(s) avec ≥ ${filtre}% de retour (coûts récursifs), triées par rendement décroissant. <span class="text-green-400">Cliquez sur une ligne pour voir la décomposition.</span></div>` + genererTableauRecursifHTML(lignesFiltrees);
+            }
+
+            setTimeout(() => progressDiv.classList.add('hidden'), 2000);
+        }
+
+        initialiserInterface();
+    </script>
+</body>
+</html>
